@@ -159,8 +159,21 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR , 'static')
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+from google.oauth2 import service_account
+GS_CREDENTIALS = service_account.Credentials.from_service_account_file(
+    os.path.join(BASE_DIR,'credential.json'))
+
+DEFAULT_FILE_STORAGE='storages.backends.gcloud.GoogleCloudStorage'
+GS_PROJECT_ID = 'rising-solstice-392114'
+GS_BUCKET_NAME = 'media_files_bucket'
+GS_CREDENTIALS = GS_CREDENTIALS
+MEDIA_ROOT = "media/"
+UPLOAD_ROOT = 'media/uploads/'
+MEDIA_URL = 'https://storage.googleapis.com/{}/'.format(GS_BUCKET_NAME)
+
+# MEDIA_URL = '/media/'
+# MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
