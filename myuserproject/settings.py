@@ -171,8 +171,30 @@ from google.oauth2 import service_account
 # GS_CREDENTIALS = service_account.Credentials.from_service_account_file(credentials_path)
 
 # Load Google Cloud credentials from the specified file path
-credentials_path = os.environ.get('GOOGLE_CREDENTIALS')
-GS_CREDENTIALS = service_account.Credentials.from_service_account_file(credentials_path)
+# credentials_path = os.environ.get('GOOGLE_CREDENTIALS')
+# GS_CREDENTIALS = service_account.Credentials.from_service_account_file(credentials_path)
+
+# Build the Google Cloud Storage credentials dictionary
+GOOGLE_CREDENTIALS = {
+    "type": "service_account",
+    "project_id": os.getenv('GOOGLE_PROJECT_ID'),
+    "private_key_id": os.getenv('GOOGLE_PRIVATE_KEY_ID'),
+    "private_key": os.getenv('GOOGLE_PRIVATE_KEY').replace('\\n', '\n'),
+    "client_email": os.getenv('GOOGLE_CLIENT_EMAIL'),
+    "client_id": os.getenv('GOOGLE_CLIENT_ID'),
+    "auth_uri": os.getenv('GOOGLE_AUTH_URI'),
+    "token_uri": os.getenv('GOOGLE_TOKEN_URI'),
+    "auth_provider_x509_cert_url": os.getenv('GOOGLE_AUTH_PROVIDER_CERT_URL'),
+    "client_x509_cert_url": os.getenv('GOOGLE_CLIENT_CERT_URL'),
+    "universe_domain": "googleapis.com"
+}
+
+# Use the credentials to authenticate with Google Cloud Storage
+GS_CREDENTIALS = service_account.Credentials.from_service_account_info(GOOGLE_CREDENTIALS)
+
+# Configure Google Cloud Storage client
+# from google.cloud import storage
+# storage_client = storage.Client(credentials=GS_CREDENTIALS)
 
 DEFAULT_FILE_STORAGE='storages.backends.gcloud.GoogleCloudStorage'
 GS_PROJECT_ID = 'rising-solstice-392114'
