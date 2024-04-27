@@ -165,14 +165,14 @@ from google.oauth2 import service_account
 #     os.path.join(BASE_DIR,'credential.json'))
 
 # Load Google Cloud credentials from environment variable
-os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = '/app/.config/google-credentials.json'
+# os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = '/app/.config/google-credentials.json'
 
-credentials_path = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
-GS_CREDENTIALS = service_account.Credentials.from_service_account_file(credentials_path)
+# credentials_path = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
+# GS_CREDENTIALS = service_account.Credentials.from_service_account_file(credentials_path)
 
 # Load Google Cloud credentials from the specified file path
-# credentials_path = os.environ.get('GOOGLE_CREDENTIALS')
-# GS_CREDENTIALS = service_account.Credentials.from_service_account_file(credentials_path)
+credentials_path = os.environ.get('GOOGLE_CREDENTIALS')
+GS_CREDENTIALS = service_account.Credentials.from_service_account_file(credentials_path)
 
 DEFAULT_FILE_STORAGE='storages.backends.gcloud.GoogleCloudStorage'
 GS_PROJECT_ID = 'rising-solstice-392114'
