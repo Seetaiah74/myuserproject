@@ -15,8 +15,12 @@ from django.db.models import Max, Prefetch
 from django.contrib.auth import get_user_model
 from datetime import datetime
 from google.cloud import storage
+from django.conf import settings
 
 User = get_user_model()
+
+# Initialize storage client using configured credentials
+storage_client = storage.Client(credentials=settings.GS_CREDENTIALS)
 
 @api_view(['POST'])
 def register_user(request):
@@ -42,7 +46,7 @@ def register_user(request):
                  # Handle profile pic upload to GCS
                 if 'profile_pic' in request.FILES:
                     image_file = request.FILES['profile_pic']
-                    image_url = upload_image_to_gcs(image_file, user.id)  # Upload to GCS
+                    image_url = upload_image_to_gcs(image_file, user.id, storage_client)  # Upload to GCS
                     user.profile_pic = image_url  # Save GCS URL to the profile_pic field
                     user.save()
 
@@ -55,16 +59,16 @@ def register_user(request):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
-def upload_image_to_gcs(image_file, user_id):
+def upload_image_to_gcs(image_file, user_id, storage_client):
     # Instantiate a GCS client
-    client = storage.Client()
+    # client = storage.Client()
 
     # Define bucket name and file path
     bucket_name = 'media_files_bucket'
     file_path = f'profile_pics/user_{user_id}_{image_file.name}'  # Adjust as needed
 
     # Get the bucket
-    bucket = client.bucket(bucket_name)
+    bucket = storage_client.bucket(bucket_name)
 
     # Create a blob and upload the file
     blob = bucket.blob(file_path)
@@ -155,7 +159,7 @@ def update_profile(request):
              # Handle profile pic update to GCS
             if 'profile_pic' in request.FILES:
                 image_file = request.FILES['profile_pic']
-                image_url = upload_image_to_gcs(image_file, user.id)  # Upload to GCS
+                image_url = upload_image_to_gcs(image_file, user.id, storage_client)  # Upload to GCS
                 user.profile_pic = image_url  # Save GCS URL to the profile_pic field
                 user.save()
             
