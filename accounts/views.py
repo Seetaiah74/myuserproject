@@ -20,7 +20,7 @@ from django.conf import settings
 User = get_user_model()
 
 # Initialize storage client using configured credentials
-storage_client = storage.Client(credentials=settings.GS_CREDENTIALS)
+#storage_client = storage.Client(credentials=settings.GS_CREDENTIALS)
 
 @api_view(['POST'])
 def register_user(request):
@@ -46,7 +46,7 @@ def register_user(request):
                  # Handle profile pic upload to GCS
                 if 'profile_pic' in request.FILES:
                     image_file = request.FILES['profile_pic']
-                    image_url = upload_image_to_gcs(image_file, user.id, storage_client)  # Upload to GCS
+                    image_url = upload_image_to_gcs(image_file, user.id, settings.storage_client)  # Upload to GCS
                     user.profile_pic = image_url  # Save GCS URL to the profile_pic field
                     user.save()
 
@@ -159,7 +159,7 @@ def update_profile(request):
              # Handle profile pic update to GCS
             if 'profile_pic' in request.FILES:
                 image_file = request.FILES['profile_pic']
-                image_url = upload_image_to_gcs(image_file, user.id, storage_client)  # Upload to GCS
+                image_url = upload_image_to_gcs(image_file, user.id, settings.storage_client)  # Upload to GCS
                 user.profile_pic = image_url  # Save GCS URL to the profile_pic field
                 user.save()
             
