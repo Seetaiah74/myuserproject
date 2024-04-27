@@ -200,9 +200,9 @@ DEFAULT_FILE_STORAGE='storages.backends.gcloud.GoogleCloudStorage'
 GS_PROJECT_ID = 'rising-solstice-392114'
 GS_BUCKET_NAME = 'media_files_bucket'
 GS_CREDENTIALS = GS_CREDENTIALS
-MEDIA_ROOT = "media/"
-UPLOAD_ROOT = 'media/uploads/'
-MEDIA_URL = 'https://storage.googleapis.com/{}/'.format(GS_BUCKET_NAME)
+# MEDIA_ROOT = "media/"
+# UPLOAD_ROOT = 'media/uploads/'
+# MEDIA_URL = 'https://storage.googleapis.com/{}/'.format(GS_BUCKET_NAME)
 
 # MEDIA_URL = '/media/'
 # MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
