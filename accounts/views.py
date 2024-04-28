@@ -1,3 +1,4 @@
+import logging
 from django.http import JsonResponse
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import status
@@ -22,62 +23,62 @@ User = get_user_model()
 # Initialize storage client using configured credentials
 storage_client = storage.Client(credentials=settings.GS_CREDENTIALS)
 
-@api_view(['POST'])
-def register_user(request):
-    if request.method == 'POST':
-        try:
-            email = request.data.get('email')
-            try:
-                existing_user = CustomUser.objects.get(email=email)
-                return Response({'message': 'User with this email already exists'},
-                                status=status.HTTP_400_BAD_REQUEST)
-            except ObjectDoesNotExist:
-                pass
+# @api_view(['POST'])
+# def register_user(request):
+#     if request.method == 'POST':
+#         try:
+#             email = request.data.get('email')
+#             try:
+#                 existing_user = CustomUser.objects.get(email=email)
+#                 return Response({'message': 'User with this email already exists'},
+#                                 status=status.HTTP_400_BAD_REQUEST)
+#             except ObjectDoesNotExist:
+#                 pass
 
-            serializer = UserSerializer(data=request.data)
-            if serializer.is_valid():
-                user = serializer.save()
+#             serializer = UserSerializer(data=request.data)
+#             if serializer.is_valid():
+#                 user = serializer.save()
 
-                #Handle profile pic upload
-                # if 'profile_pic' in request.FILES:
-                #     user.profile_pic = request.FILES['profile_pic']
-                #     user.save()
+#                 #Handle profile pic upload
+#                 # if 'profile_pic' in request.FILES:
+#                 #     user.profile_pic = request.FILES['profile_pic']
+#                 #     user.save()
 
-                 # Handle profile pic upload to GCS
-                if 'profile_pic' in request.FILES:
-                    image_file = request.FILES['profile_pic']
-                    image_url = upload_image_to_gcs(image_file, user.id, storage_client)  # Upload to GCS
-                    user.profile_pic = image_url  # Save GCS URL to the profile_pic field
-                    user.save()
+#                  # Handle profile pic upload to GCS
+#                 if 'profile_pic' in request.FILES:
+#                     image_file = request.FILES['profile_pic']
+#                     image_url = upload_image_to_gcs(image_file, user.id, storage_client)  # Upload to GCS
+#                     user.profile_pic = image_url  # Save GCS URL to the profile_pic field
+#                     user.save()
 
-                return Response({'message': 'User registered successfully', 'result': serializer.data},
-                                status=status.HTTP_201_CREATED)
+#                 return Response({'message': 'User registered successfully', 'result': serializer.data},
+#                                 status=status.HTTP_201_CREATED)
             
-            else:
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#             else:
+#                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+#         except Exception as e:
+#             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
-def upload_image_to_gcs(image_file, user_id, storage_client):
-    # Instantiate a GCS client
-    # client = storage.Client()
+# def upload_image_to_gcs(image_file, user_id, storage_client):
+#     # Instantiate a GCS client
+#     # client = storage.Client()
 
-    # Define bucket name and file path
-    bucket_name = 'media_files_bucket'
-    file_path = f'profile_pics/user_{user_id}_{image_file.name}'  # Adjust as needed
+#     # Define bucket name and file path
+#     bucket_name = 'media_files_bucket'
+#     file_path = f'profile_pics/user_{user_id}_{image_file.name}'  # Adjust as needed
 
-    # Get the bucket
-    bucket = storage_client.bucket(bucket_name)
+#     # Get the bucket
+#     bucket = storage_client.bucket(bucket_name)
 
-    # Create a blob and upload the file
-    blob = bucket.blob(file_path)
-    blob.upload_from_file(image_file, content_type=image_file.content_type)
+#     # Create a blob and upload the file
+#     blob = bucket.blob(file_path)
+#     blob.upload_from_file(image_file, content_type=image_file.content_type)
 
-    # Generate public URL for the uploaded file
-    image_url = f'https://storage.googleapis.com/{bucket_name}/{file_path}'
+#     # Generate public URL for the uploaded file
+#     image_url = f'https://storage.googleapis.com/{bucket_name}/{file_path}'
 
-    return image_url
+#     return image_url
 
 
 @api_view(['POST'])
@@ -166,22 +167,26 @@ def send_message(request, recipient_id):
 #         else:
 #             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
+logger = logging.getLogger(__name__)
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def update_profile(request):
     user = request.user
     data = request.data.copy()  # Make a copy to avoid modifying the original data
 
-    # Check if a new profile picture is provided
-    new_profile_pic = request.FILES.get('profile_pic')
-
     try:
+        # Check if a new profile picture is provided
+        new_profile_pic = request.FILES.get('profile_pic')
         if new_profile_pic:
             # Define the file path for GCS with user-specific prefix
             file_path = f'profile_pics/user_{user.id}_{new_profile_pic.name}'
 
             # Get the GCS client from settings
-            #storage_client = storage_client
+            storage_client = settings.storage_client
+            if not storage_client:
+                raise Exception('GCS storage client is not configured.')
 
             # Define the GCS bucket name
             bucket_name = 'media_files_bucket'
@@ -189,18 +194,22 @@ def update_profile(request):
             # Get the GCS bucket
             bucket = storage_client.bucket(bucket_name)
 
-            # Create a blob with the specified file path
+            # Check if the file already exists in GCS
             blob = bucket.blob(file_path)
+            if not blob.exists():
+                # Upload the file to GCS
+                blob.upload_from_file(new_profile_pic, content_type=new_profile_pic.content_type)
+                logger.info(f'Uploaded new profile picture to GCS: {file_path}')
 
-            # Upload the file to GCS
-            blob.upload_from_file(new_profile_pic, content_type=new_profile_pic.content_type)
+                # Generate the public URL for the uploaded file
+                image_url = f'https://storage.googleapis.com/{bucket_name}/{file_path}'
 
-            # Generate the public URL for the uploaded file
-            image_url = f'https://storage.googleapis.com/{bucket_name}/{file_path}'
+                # Update the user's profile with the new profile picture URL
+                user.profile_pic = image_url
+                logger.info(f'Set profile picture URL for user {user.id}: {image_url}')
+            else:
+                logger.warning(f'Profile picture {file_path} already exists in GCS.')
 
-            # Update the user's profile with the new profile picture URL
-            user.profile_pic = image_url
-        
         # Update the user's profile using the serializer if data is valid
         serializer = UserSerializer(user, data=data, partial=True)
         if serializer.is_valid():
@@ -210,8 +219,8 @@ def update_profile(request):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     except Exception as e:
+        logger.error(f'Error updating profile: {str(e)}')
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
         # Update the user's profile using the serializer
         # serializer = UserSerializer(user, data=data, partial=True)
