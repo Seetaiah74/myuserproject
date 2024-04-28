@@ -151,21 +151,37 @@ def update_profile(request):
         user = request.user
         data = request.data.copy()  # Make a copy to avoid modifying the original data
         
-        # Update the user's profile using the serializer
+        # Check if a new profile picture is provided
+        new_profile_pic = request.FILES.get('profile_pic')
+        if new_profile_pic:
+            # Handle profile pic update to GCS
+            image_url = upload_image_to_gcs(new_profile_pic, user.id, storage_client)
+            user.profile_pic = image_url  # Save GCS URL to the profile_pic field
+
+         # Update the user's profile using the serializer
         serializer = UserSerializer(user, data=data, partial=True)
         if serializer.is_valid():
             serializer.update(user, data)  # Using the custom update method
-            
-             # Handle profile pic update to GCS
-            if 'profile_pic' in request.FILES:
-                image_file = request.FILES['profile_pic']
-                image_url = upload_image_to_gcs(image_file, user.id, storage_client)  # Upload to GCS
-                user.profile_pic = image_url  # Save GCS URL to the profile_pic field
-                user.save()
-            
             return Response({'message': 'Profile updated successfully', 'result': serializer.data}, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+        # Update the user's profile using the serializer
+        # serializer = UserSerializer(user, data=data, partial=True)
+        # if serializer.is_valid():
+            # serializer.update(user, data)  # Using the custom update method
+            
+             # Handle profile pic update to GCS
+        #     if 'profile_pic' in request.FILES:
+        #         image_file = request.FILES['profile_pic']
+        #         image_url = upload_image_to_gcs(image_file, user.id, storage_client)  # Upload to GCS
+        #         user.profile_pic = image_url  # Save GCS URL to the profile_pic field
+        #         user.save()
+            
+        #     return Response({'message': 'Profile updated successfully', 'result': serializer.data}, status=status.HTTP_200_OK)
+        # else:
+        #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
