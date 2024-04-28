@@ -176,15 +176,40 @@ def update_profile(request):
         # Check if a new profile picture is provided
         new_profile_pic = request.FILES.get('profile_pic')
         
+        # If a new profile picture is provided, handle upload to GCS
+        if new_profile_pic:
+            # Define the file path for GCS with user-specific prefix
+            file_path = f'profile_pics/user_{user.id}_{new_profile_pic.name}'
+            
+            try:
+                # Instantiate GCS client
+                #storage_client = storage.Client()
+
+                # Define the GCS bucket name
+                bucket_name = 'media_files_bucket'
+
+                # Get the GCS bucket
+                bucket = storage_client.bucket(bucket_name)
+
+                # Create a blob with the specified file path
+                blob = bucket.blob(file_path)
+
+                # Upload the file to GCS
+                blob.upload_from_file(new_profile_pic, content_type=new_profile_pic.content_type)
+
+                # Generate the public URL for the uploaded file
+                image_url = f'https://storage.googleapis.com/{bucket_name}/{file_path}'
+
+                # Update the user's profile with the new profile picture URL
+                user.profile_pic = image_url
+                user.save()
+
+            except Exception as e:
+                return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
         # Update the user's profile using the serializer if data is valid
         serializer = UserSerializer(user, data=data, partial=True)
         if serializer.is_valid():
-            if new_profile_pic:
-                # Handle profile pic update to GCS
-                image_url = upload_image_to_gcs(new_profile_pic, user.id, storage_client)
-                user.profile_pic = image_url  # Save GCS URL to the profile_pic field
-            
-            # Save the updated profile data
             serializer.update(user, data)
             return Response({'message': 'Profile updated successfully', 'result': serializer.data}, status=status.HTTP_200_OK)
         else:
