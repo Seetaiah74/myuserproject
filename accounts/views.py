@@ -207,7 +207,8 @@ def update_profile(request):
             image_url = f'https://storage.googleapis.com/{bucket_name}/{file_path}'
 
             # Update the profile_pic field in user data to the GCS URL
-            data['profile_pic'] = image_url
+            #data['profile_pic'] = image_url
+            user.profile_pic = image_url
 
         # Update the user's profile using the serializer
         serializer = UserSerializer(user, data=data, partial=True)
