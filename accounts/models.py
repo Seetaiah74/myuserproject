@@ -6,7 +6,8 @@ class CustomUser(AbstractUser):
     birthday = models.DateField(blank=True, null=True)
     gender = models.CharField(max_length=10, blank=True, null=True)
     interests = models.TextField(blank=True, null=True)  # Modified to accept list of interest labels
-    profile_pic = models.ImageField(upload_to='profile_pics/', blank=True, null=True)
+    # profile_pic = models.ImageField(upload_to='profile_pics/', blank=True, null=True)
+    profile_pic = models.TextField(blank=True, null=True)
     latitude = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True)
     address = models.CharField(max_length=255, blank=True, null=True)
