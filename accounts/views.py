@@ -23,42 +23,42 @@ User = get_user_model()
 # Initialize storage client using configured credentials
 storage_client = storage.Client(credentials=settings.GS_CREDENTIALS)
 
-# @api_view(['POST'])
-# def register_user(request):
-#     if request.method == 'POST':
-#         try:
-#             email = request.data.get('email')
-#             try:
-#                 existing_user = CustomUser.objects.get(email=email)
-#                 return Response({'message': 'User with this email already exists'},
-#                                 status=status.HTTP_400_BAD_REQUEST)
-#             except ObjectDoesNotExist:
-#                 pass
+@api_view(['POST'])
+def register_user(request):
+    if request.method == 'POST':
+        try:
+            email = request.data.get('email')
+            try:
+                existing_user = CustomUser.objects.get(email=email)
+                return Response({'message': 'User with this email already exists'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            except ObjectDoesNotExist:
+                pass
 
-#             serializer = UserSerializer(data=request.data)
-#             if serializer.is_valid():
-#                 user = serializer.save()
+            serializer = UserSerializer(data=request.data)
+            if serializer.is_valid():
+                user = serializer.save()
 
-#                 #Handle profile pic upload
-#                 # if 'profile_pic' in request.FILES:
-#                 #     user.profile_pic = request.FILES['profile_pic']
-#                 #     user.save()
+                #Handle profile pic upload
+                # if 'profile_pic' in request.FILES:
+                #     user.profile_pic = request.FILES['profile_pic']
+                #     user.save()
 
-#                  # Handle profile pic upload to GCS
-#                 if 'profile_pic' in request.FILES:
-#                     image_file = request.FILES['profile_pic']
-#                     image_url = upload_image_to_gcs(image_file, user.id, storage_client)  # Upload to GCS
-#                     user.profile_pic = image_url  # Save GCS URL to the profile_pic field
-#                     user.save()
+                 # Handle profile pic upload to GCS
+                if 'profile_pic' in request.FILES:
+                    image_file = request.FILES['profile_pic']
+                    # image_url = upload_image_to_gcs(image_file, user.id, storage_client)  # Upload to GCS
+                    # user.profile_pic = image_url  # Save GCS URL to the profile_pic field
+                    user.save()
 
-#                 return Response({'message': 'User registered successfully', 'result': serializer.data},
-#                                 status=status.HTTP_201_CREATED)
+                return Response({'message': 'User registered successfully', 'result': serializer.data},
+                                status=status.HTTP_201_CREATED)
             
-#             else:
-#                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             
-#         except Exception as e:
-#             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
 # def upload_image_to_gcs(image_file, user_id, storage_client):
 #     # Instantiate a GCS client
