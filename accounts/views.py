@@ -40,36 +40,36 @@ def register_user(request):
                 user = serializer.save()
 
                 new_profile_pic = request.FILES.get('profile_pic_url')
-            if new_profile_pic:
-                # Define the file path for GCS with user-specific prefix
-                file_path = f'profile_pics/user_{user.id}_{new_profile_pic.name}'
+                if new_profile_pic:
+                    # Define the file path for GCS with user-specific prefix
+                    file_path = f'profile_pics/user_{user.id}_{new_profile_pic.name}'
 
-                # Get the GCS client from settings
-                # storage_client = settings.storage_client
-                storage_client = storage.Client(credentials=settings.GS_CREDENTIALS)
-                if not storage_client:
-                    raise Exception('GCS storage client is not configured.')
+                    # Get the GCS client from settings
+                    # storage_client = settings.storage_client
+                    storage_client = storage.Client(credentials=settings.GS_CREDENTIALS)
+                    if not storage_client:
+                        raise Exception('GCS storage client is not configured.')
 
-                # Define the GCS bucket name
-                bucket_name = 'media_files_bucket'
+                    # Define the GCS bucket name
+                    bucket_name = 'media_files_bucket'
 
-                # Get the GCS bucket
-                bucket = storage_client.bucket(bucket_name)
+                    # Get the GCS bucket
+                    bucket = storage_client.bucket(bucket_name)
 
-                # Create a blob with the specified file path
-                blob = bucket.blob(file_path)
+                    # Create a blob with the specified file path
+                    blob = bucket.blob(file_path)
 
-                # Upload the file to GCS
-                blob.upload_from_file(new_profile_pic, content_type=new_profile_pic.content_type)
-        
+                    # Upload the file to GCS
+                    blob.upload_from_file(new_profile_pic, content_type=new_profile_pic.content_type)
+            
 
-                # Generate the public URL for the uploaded file
-                image_url = f'https://storage.googleapis.com/{bucket_name}/{file_path}'
+                    # Generate the public URL for the uploaded file
+                    image_url = f'https://storage.googleapis.com/{bucket_name}/{file_path}'
 
-                # Update the profile_pic field in user data to the GCS URL
-                # data['profile_pic'] = image_url
-                user.profile_pic = image_url
-                user.save()
+                    # Update the profile_pic field in user data to the GCS URL
+                    # data['profile_pic'] = image_url
+                    user.profile_pic = image_url
+                    user.save()
 
 
                 #Handle profile pic upload
