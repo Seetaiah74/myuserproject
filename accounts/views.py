@@ -185,7 +185,8 @@ def update_profile(request):
             file_path = f'profile_pics/user_{user.id}_{new_profile_pic.name}'
 
             # Get the GCS client from settings
-            storage_client = settings.storage_client
+            # storage_client = settings.storage_client
+            storage_client = storage.Client(credentials=settings.GS_CREDENTIALS)
             if not storage_client:
                 raise Exception('GCS storage client is not configured.')
 
