@@ -1,4 +1,3 @@
-import logging
 from django.http import JsonResponse
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import status
@@ -35,9 +34,43 @@ def register_user(request):
             except ObjectDoesNotExist:
                 pass
 
+            
             serializer = UserSerializer(data=request.data)
             if serializer.is_valid():
                 user = serializer.save()
+
+                new_profile_pic = request.FILES.get('profile_pic_url')
+            if new_profile_pic:
+                # Define the file path for GCS with user-specific prefix
+                file_path = f'profile_pics/user_{user.id}_{new_profile_pic.name}'
+
+                # Get the GCS client from settings
+                # storage_client = settings.storage_client
+                storage_client = storage.Client(credentials=settings.GS_CREDENTIALS)
+                if not storage_client:
+                    raise Exception('GCS storage client is not configured.')
+
+                # Define the GCS bucket name
+                bucket_name = 'media_files_bucket'
+
+                # Get the GCS bucket
+                bucket = storage_client.bucket(bucket_name)
+
+                # Create a blob with the specified file path
+                blob = bucket.blob(file_path)
+
+                # Upload the file to GCS
+                blob.upload_from_file(new_profile_pic, content_type=new_profile_pic.content_type)
+        
+
+                # Generate the public URL for the uploaded file
+                image_url = f'https://storage.googleapis.com/{bucket_name}/{file_path}'
+
+                # Update the profile_pic field in user data to the GCS URL
+                # data['profile_pic'] = image_url
+                user.profile_pic = image_url
+                user.save()
+
 
                 #Handle profile pic upload
                 # if 'profile_pic' in request.FILES:
@@ -45,11 +78,11 @@ def register_user(request):
                 #     user.save()
 
                  # Handle profile pic upload to GCS
-                if 'profile_pic' in request.FILES:
-                    image_file = request.FILES['profile_pic']
-                    image_url = upload_image_to_gcs(image_file, user.id, storage_client)  # Upload to GCS
-                    user.profile_pic = image_url  # Save GCS URL to the profile_pic field
-                    user.save()
+                # if 'profile_pic' in request.FILES:
+                #     image_file = request.FILES['profile_pic']
+                #     image_url = upload_image_to_gcs(image_file, user.id, storage_client)  # Upload to GCS
+                #     user.profile_pic = image_url  # Save GCS URL to the profile_pic field
+                #     user.save()
 
                 return Response({'message': 'User registered successfully', 'result': serializer.data},
                                 status=status.HTTP_201_CREATED)
@@ -60,25 +93,25 @@ def register_user(request):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
-def upload_image_to_gcs(image_file, user_id, storage_client):
-    # Instantiate a GCS client
-    # client = storage.Client()
+# def upload_image_to_gcs(image_file, user_id, storage_client):
+#     # Instantiate a GCS client
+#     # client = storage.Client()
 
-    # Define bucket name and file path
-    bucket_name = 'media_files_bucket'
-    file_path = f'profile_pics/user_{user_id}_{image_file.name}'  # Adjust as needed
+#     # Define bucket name and file path
+#     bucket_name = 'media_files_bucket'
+#     file_path = f'profile_pics/user_{user_id}_{image_file.name}'  # Adjust as needed
 
-    # Get the bucket
-    bucket = storage_client.bucket(bucket_name)
+#     # Get the bucket
+#     bucket = storage_client.bucket(bucket_name)
 
-    # Create a blob and upload the file
-    blob = bucket.blob(file_path)
-    blob.upload_from_file(image_file, content_type=image_file.content_type)
+#     # Create a blob and upload the file
+#     blob = bucket.blob(file_path)
+#     blob.upload_from_file(image_file, content_type=image_file.content_type)
 
-    # Generate public URL for the uploaded file
-    image_url = f'https://storage.googleapis.com/{bucket_name}/{file_path}'
+#     # Generate public URL for the uploaded file
+#     image_url = f'https://storage.googleapis.com/{bucket_name}/{file_path}'
 
-    return image_url
+#     return image_url
 
 
 @api_view(['POST'])
@@ -169,7 +202,7 @@ def send_message(request, recipient_id):
 #             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
     
-logger = logging.getLogger(__name__)
+
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -201,7 +234,7 @@ def update_profile(request):
 
             # Upload the file to GCS
             blob.upload_from_file(new_profile_pic, content_type=new_profile_pic.content_type)
-            logger.info(f'Uploaded new profile picture to GCS: {file_path}')
+      
 
             # Generate the public URL for the uploaded file
             image_url = f'https://storage.googleapis.com/{bucket_name}/{file_path}'
@@ -219,7 +252,6 @@ def update_profile(request):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     except Exception as e:
-        logger.error(f'Error updating profile: {str(e)}')
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
 @api_view(['GET'])
