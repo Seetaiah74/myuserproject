@@ -179,7 +179,7 @@ def update_profile(request):
 
     try:
         # Check if a new profile picture is provided
-        new_profile_pic = request.FILES.get('profile_pic')
+        new_profile_pic = request.FILES.get('profile_pic_url')
         if new_profile_pic:
             # Define the file path for GCS with user-specific prefix
             file_path = f'profile_pics/user_{user.id}_{new_profile_pic.name}'
