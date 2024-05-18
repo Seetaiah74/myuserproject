@@ -315,7 +315,7 @@ def retrieve_users_within_radius(request):
 
         user_alldata.append({
             'id': user.id,
-            'profile_pic': user.profile_pic.url if user.profile_pic else None,
+            'profile_pic': user.profile_pic if user.profile_pic else None,
             'username': user.username,
             'age': age,
             'has_token': has_token,
@@ -348,7 +348,7 @@ def retrieve_users_within_radius(request):
 
             user_data.append({
                 'id': user.id,
-                'profile_pic': user.profile_pic.url if user.profile_pic else None,
+                'profile_pic': user.profile_pic if user.profile_pic else None,
                 'username': user.username,
                 'age': age,
                 'has_token': has_token,
