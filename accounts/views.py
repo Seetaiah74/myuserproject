@@ -266,8 +266,19 @@ def retrieve_users_within_radius(request):
     #print("Latitude:", latitude)
     #print("Longitude:", longitude)
     
+    # Get radius_km from request data (form-data or JSON)
+    radius = request.data.get('radius')
+    if radius is None:
+        return Response({'error': 'Radius must be provided.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        radius_km = float(radius)
+    except ValueError:
+        return Response({'error': 'Radius must be a valid number.'}, status=status.HTTP_400_BAD_REQUEST)
+
+
     # Get radius_km from request data
-    radius_km = float(request.data.get('radius'))
+    #radius_km = float(request.data.get('radius'))
     
     if radius_km is None:
         return Response({'error': 'Radius must be provided.'}, status=status.HTTP_400_BAD_REQUEST)
