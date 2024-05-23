@@ -33,10 +33,15 @@ class UserLoginSerializer(serializers.Serializer):
         else:
             raise serializers.ValidationError("Both email and password are required.")
         
+class SenderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'username', 'profile_pic']
+
 
 class MessageSerializer(serializers.ModelSerializer):
-    sender = UserSerializer(read_only=True)
-    
+    sender = SenderSerializer(read_only=True)
+
     class Meta:
         model = Message
         fields = ['id', 'chat', 'sender', 'recipient', 'content', 'timestamp']
