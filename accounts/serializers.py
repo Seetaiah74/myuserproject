@@ -35,6 +35,8 @@ class UserLoginSerializer(serializers.Serializer):
         
 
 class MessageSerializer(serializers.ModelSerializer):
+    sender = UserSerializer(read_only=True)
+    
     class Meta:
         model = Message
         fields = ['id', 'chat', 'sender', 'recipient', 'content', 'timestamp']
