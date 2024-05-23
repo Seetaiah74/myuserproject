@@ -449,6 +449,23 @@ def get_latest_messages(request, chat_id, last_timestamp):
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_new_messages(request, last_timestamp):
+    try:
+        user = request.user
+        
+        last_timestamp_datetime = datetime.strptime(last_timestamp, "%Y-%m-%dT%H:%M:%S.%fZ")
+
+        #Get messages newer than the provided timestamp
+        new_messages = Message.objects.filter(recipient=user, timestamp__gt=last_timestamp_datetime).order_by('timestamp')
+
+        serializer = MessageSerializer(new_messages, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except ValueError:
+        return Response({'error': 'Invalid timestamp format.'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
