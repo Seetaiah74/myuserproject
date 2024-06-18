@@ -64,6 +64,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
             }
         )
 
+        recipient = await database_sync_to_async(User.objects.get)(id=receiver_id)
+        if recipient.fcm_token:
+            await self.send_fcm_notification(recipient.fcm_token, formatted_message)
+
+
     async def chat_message(self, event):
         message = event['message']
 

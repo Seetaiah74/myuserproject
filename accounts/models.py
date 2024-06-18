@@ -11,6 +11,7 @@ class CustomUser(AbstractUser):
     latitude = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True)
     address = models.CharField(max_length=255, blank=True, null=True)
+    fcm_token = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
         return self.username
