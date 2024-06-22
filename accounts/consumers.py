@@ -4,7 +4,8 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.contrib.auth import get_user_model
 from django.db import close_old_connections
-
+from firebase_admin import messaging
+import firebase_admin
 from .models import Message, Chat
 
 User = get_user_model()
@@ -90,5 +91,23 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 auth_token=token)
         except User.DoesNotExist:
             return None
+
+
+    async def send_fcm_notification(self, token, message):
+        # Construct the message payload
+        message = messaging.Message(
+            notification=messaging.Notification(
+                title='New Message',
+                body=message,
+            ),
+            token=token,
+        )
+        # Send the message
+        try:
+            response = messaging.send(message)
+            print('Successfully sent message:', response)
+        except Exception as e:
+            print('Error sending message:', e)
+
 
     
