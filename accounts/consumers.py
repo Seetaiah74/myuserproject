@@ -54,6 +54,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await database_sync_to_async(message.save)()
 
         username = self.scope['user'].username
+        profile_pic = self.scope['user'].profile_pic
 
         formatted_message = f'{username}: {content}'
 
@@ -61,13 +62,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
             self.room_group_name,
             {
                 'type': 'chat_message',
+                'username': username,
+                'profile_pic': profile_pic,
                 'message': formatted_message,
             }
         )
 
         recipient = await database_sync_to_async(User.objects.get)(id=receiver_id)
         if recipient.fcm_token:
-            await self.send_fcm_notification(recipient.fcm_token, formatted_message)
+            await self.send_fcm_notification(recipient.fcm_token, username, profile_pic, formatted_message)
 
 
     async def chat_message(self, event):
@@ -93,14 +96,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return None
 
 
-    async def send_fcm_notification(self, token, message):
+    async def send_fcm_notification(self, token, username, profile_pic, message):
         # Construct the message payload
         message = messaging.Message(
-            notification=messaging.Notification(
-                title='New Message',
-                body=message,
-            ),
+            data={
+                'username': username,
+                'profile_pic': profile_pic,
+                'message': message,
+            },
             token=token,
+           
         )
         # Send the message
         try:
