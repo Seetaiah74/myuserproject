@@ -60,11 +60,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
         receiver_profile_pic = await self.get_profile_pic_by_id(receiver_id)
 
         formatted_message = {
-            'chat_id': self.chat_id,
-            'sender_id': sender_id,
+            'chat_id': str(self.chat_id),
+            'sender_id': str(sender_id),
             'sender_username': sender_username,
             'sender_profile_pic': sender_profile_pic,
-            'receiver_id': receiver_id,
+            'receiver_id': str(receiver_id),
             'receiver_username': receiver_username,
             'receiver_profile_pic': receiver_profile_pic,
             'content': content,
