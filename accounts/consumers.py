@@ -53,24 +53,36 @@ class ChatConsumer(AsyncWebsocketConsumer):
         message = Message(chat=chat, sender_id=sender_id, recipient_id=receiver_id, content=content)
         await database_sync_to_async(message.save)()
 
-        username = self.scope['user'].username
-        profile_pic = self.scope['user'].profile_pic
+        sender_username = self.scope['user'].username
+        receiver_username = await self.get_username_by_id(receiver_id)
 
-        formatted_message = f'{username}: {content}'
+        sender_profile_pic = await self.get_profile_pic_by_id(sender_id)
+        receiver_profile_pic = await self.get_profile_pic_by_id(receiver_id)
+
+        formatted_message = {
+            'chat_id': self.chat_id,
+            'sender_id': sender_id,
+            'sender_username': sender_username,
+            'sender_profile_pic': sender_profile_pic,
+            'receiver_id': receiver_id,
+            'receiver_username': receiver_username,
+            'receiver_profile_pic': receiver_profile_pic,
+            'content': content,
+        }
+
+               
 
         await self.channel_layer.group_send(
             self.room_group_name,
             {
                 'type': 'chat_message',
-                'username': username,
-                'profile_pic': profile_pic,
                 'message': formatted_message,
             }
         )
 
         recipient = await database_sync_to_async(User.objects.get)(id=receiver_id)
         if recipient.fcm_token:
-            await self.send_fcm_notification(recipient.fcm_token, username, profile_pic, formatted_message)
+            await self.send_fcm_notification(recipient.fcm_token, formatted_message)
 
 
     async def chat_message(self, event):
@@ -95,13 +107,24 @@ class ChatConsumer(AsyncWebsocketConsumer):
         except User.DoesNotExist:
             return None
 
+    async def get_username_by_id(self, user_id):
+        try:
+            user = await database_sync_to_async(User.objects.get)(id=user_id)
+            return user.username
+        except User.DoesNotExist:
+            return None
 
-    async def send_fcm_notification(self, token, username, profile_pic, message):
+    async def get_profile_pic_by_id(self, user_id):
+        try:
+            user = await database_sync_to_async(User.objects.get)(id=user_id)
+            return user.profile_pic  # Adjust this according to your User model
+        except User.DoesNotExist:
+            return None
+        
+    async def send_fcm_notification(self, token, message):
         # Construct the message payload
         message = messaging.Message(
             data={
-                'username': username,
-                'profile_pic': profile_pic,
                 'message': message,
             },
             token=token,
