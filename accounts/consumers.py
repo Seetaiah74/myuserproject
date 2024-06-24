@@ -122,11 +122,19 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return None
         
     async def send_fcm_notification(self, token, message):
-        # Construct the message payload
+         # Construct the message payload ensuring all values are strings
+        message_payload = {
+            'chat_id': message['chat_id'],
+            'sender_id': message['sender_id'],
+            'sender_username': message['sender_username'],
+            'sender_profile_pic': message['sender_profile_pic'],
+            'receiver_id': message['receiver_id'],
+            'receiver_username': message['receiver_username'],
+            'receiver_profile_pic': message['receiver_profile_pic'],
+            'content': message['content'],
+        }
         message = messaging.Message(
-            data={
-                'message': message,
-            },
+            data=message_payload,
             token=token,
            
         )
