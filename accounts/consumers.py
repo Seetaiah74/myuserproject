@@ -14,9 +14,9 @@ User = get_user_model()
 class ChatConsumer(AsyncWebsocketConsumer):
 
     async def connect(self):
-        self.chat_id = self.scope['url_route']['kwargs']['chat_id']
-        self.receiver_id = self.scope['url_route']['kwargs']['receiver_id']
-        self.room_group_name = f'chat_{self.chat_id}'
+        self.chat_id = self.scope['url_route']['kwargs'].get('chat_id')
+        self.receiver_id = self.scope['url_route']['kwargs'].get('receiver_id')
+        self.room_group_name = None
 
         await self.channel_layer.group_add(
             self.room_group_name,
@@ -28,18 +28,28 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         if user is not None and user.is_authenticated:
             close_old_connections()
-
             self.scope['user'] = user
+
+            if not self.chat_id:
+                self.chat_id = await self.get_or_create_chat(user.id, self.receiver_id)
+            
+            self.room_group_name = f'chat_{self.chat_id}'
+
+            await self.channel_layer.group_add(
+                self.room_group_name,
+                self.channel_name
+            )
             await self.accept()
         else:
-            await self.close
+            await self.close()
 
     
     async def disconnect(self, close_code):
-        await self.channel_layer.group_discard(
-            self.room_group_name,
-            self.channel_name
-        )
+        if self.room_group_name:
+            await self.channel_layer.group_discard(
+                self.room_group_name,
+                self.channel_name
+            )
 
     async def receive(self, text_data):
         data = json.loads(text_data)
@@ -120,7 +130,26 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return user.profile_pic  # Adjust this according to your User model
         except User.DoesNotExist:
             return None
-        
+    
+    async def get_or_create_chat(self, sender_id, receiver_id):
+        chat = await database_sync_to_async(Chat.objects.filter)(
+            participants__id=sender_id
+        ).filter(
+            participants__id=receiver_id
+        ).first()
+
+        if not chat:
+            chat = await self.create_new_chat(sender_id, receiver_id)
+
+        return chat.id
+    
+    async def create_new_chat(self, sender_id, receiver_id):
+        chat = await database_sync_to_async(Chat.objects.create)()
+        sender = await database_sync_to_async(User.objects.get)(id=sender_id)
+        receiver = await database_sync_to_async(User.objects.get)(id=receiver_id)
+        await database_sync_to_async(chat.participants.add)(sender, receiver)
+        return chat
+    
     async def send_fcm_notification(self, token, message):
          # Construct the message payload ensuring all values are strings
         message_payload = {
